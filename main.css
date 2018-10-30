@@ -1,0 +1,88 @@
+body {
+    color: white;
+    background-color: black;
+    font-size: 1.6em;
+    margin-left: 30%;
+    margin-right: 30%;
+    font-family: 'Dosis', sans-serif;
+    overflow: hidden;
+}
+
+#choices {
+    text-align: center;
+}
+
+button {
+    margin-left: 10px;
+    margin-top: 15px;
+    height: 22px;
+    font-size: 14px;
+}
+
+.center-screen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 100vh;
+}
+
+@media only screen and (min-device-width : 320px) and (max-device-width : 580px) {
+    body {
+        margin-right: 10%;
+        margin-left: 10%;
+    }
+}
+
+body {
+    text-align: center;
+}
+
+body:before {
+    content: '';
+    display: inline-block;
+    vertical-align: middle;
+}
+
+button {
+    background: #1AAB8A;
+    color: #fff;
+    border: none;
+    position: relative;
+    height: 30px;
+    padding: 0 2em;
+    cursor: pointer;
+    transition: 800ms ease all;
+    outline: none;
+}
+
+button:hover {
+    background: #fff;
+    color: #1AAB8A;
+}
+
+button:before,
+button:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 2px;
+    width: 0;
+    background: #1AAB8A;
+    transition: 400ms ease all;
+}
+
+button:after {
+    right: inherit;
+    top: inherit;
+    left: 0;
+    bottom: 0;
+}
+
+button:hover:before,
+button:hover:after {
+    width: 100%;
+    transition: 800ms ease all;
+}
