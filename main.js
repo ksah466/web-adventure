@@ -45,16 +45,14 @@ var Game = {
         if (typeof s != "undefined" && "customFunc" in s) {
             s.customFunc()
         }
-        if (!("block" in s)) {
-            UIHandler.updateText(s.text)
-            UIHandler.updateButtons(s.buttons)
-        }
+		UIHandler.updateText(s.text)
+        UIHandler.updateButtons(s.buttons)
     },
     tick: function () {
-        if (player.state = "alive" && player.health <= 0) {
-            player.health = 1
+        if (player.health <= 0) {
+            player.health = 0
             player.items = ["Hope"]
-            Game._changelevel(scenario.gameover)
+            Game._changeLevel(scenario.gameover)
         }
         UIHandler.updateStats();
     },
@@ -67,6 +65,7 @@ var Game = {
     },
     customDeath: function (message) {
         scenario.gameover.text = message + "\nPlay Again?"
+        player.health = 0;
         Game.advanceTo(scenario.gameover)
     }
 }
@@ -102,7 +101,6 @@ var scenario = {
             scenario.wait.text = `You wait for ${player.hoursWaited} hours, but nothing happens\nWhat do you do?`;
             player.hoursWaited += 1;
             if (player.hoursWaited > 4) {
-                player.health = -1;
                 Game.customDeath("You died of " + ["exhaustion", "dehydration", "boredom"][Math.floor(Math.random() * 3)])
             }
         }
