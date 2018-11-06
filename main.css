@@ -2,8 +2,6 @@ body {
     color: white;
     background-color: black;
     font-size: 1.6em;
-    margin-left: 30%;
-    margin-right: 30%;
     font-family: 'Dosis', sans-serif;
     overflow: hidden;
 }
@@ -20,6 +18,8 @@ button {
 }
 
 .center-screen {
+    position: relative;
+    top: -33px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -28,21 +28,34 @@ button {
     min-height: 100vh;
 }
 
+#stats {
+    display: flex;
+}
+
+#stats p {
+    text-align: center;
+    width: 50%;
+    margin-top: 0%;
+    margin-bottom: 0%;
+    padding-right: 10px;
+}
+
+#stats #playerHP {
+    color: lightcoral;
+    font-weight: 900;
+}
+
+#stats #playerItems {
+    color: cornflowerblue;
+    font-weight: 900;
+}
+
+
 @media only screen and (min-device-width : 320px) and (max-device-width : 580px) {
     body {
         margin-right: 10%;
         margin-left: 10%;
     }
-}
-
-body {
-    text-align: center;
-}
-
-body:before {
-    content: '';
-    display: inline-block;
-    vertical-align: middle;
 }
 
 button {

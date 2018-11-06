@@ -1,85 +1,146 @@
 var text = document.getElementById("text");
 var choices = document.getElementById('choices');
 var input = document.getElementById('input');
+var health = document.getElementById("playerHP");
+var items = document.getElementById("playerItems");
+var stats = document.getElementById("stats");
+
+function map(num, in_min, in_max, out_min, out_max) {
+    return (num - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 
 input.onclick = function (event) {
     input.parentNode.removeChild(input)
-    advanceTo(scenario.main)
+    stats.style.visibility = "";
+    Game.advanceTo(scenario.main)
 };
 
-var updateText = function (words) {
-    text.innerHTML = words.replace("\n", "<br>")
-};
-
-var updateButtons = function (buttonList) {
-    choices.innerHTML = "";
-    if (buttonList !== undefined) {
-        for (var i = 0; i < buttonList.length; i++) {
-            choices.innerHTML += "<button onClick=" + buttonList[i][1] + ">" + buttonList[i][0] + "</button>";
+var UIHandler = {
+    updateStats: function () {
+        health.innerText = player.health
+        items.innerText = player.items.join();
+    },
+    updateText: function (words) {
+        text.innerHTML = words.replace("\n", "<br>")
+    },
+    updateButtons: function (buttonList) {
+        choices.innerHTML = "";
+        if (buttonList !== undefined) {
+            for (var i = 0; i < buttonList.length; i++) {
+                choices.innerHTML += "<button onClick=" + buttonList[i][1] + ">" + buttonList[i][0] + "</button>";
+            }
         }
-    }
-};
+    },
 
-var advanceTo = function (s) {
-    if ("customFunc" in s) {
-        s.customFunc()
-    }
-
-    if (!("block" in s)) {
-        updateText(s.text)
-        updateButtons(s.buttons)
-    }
-};
-
-function sleep (time) {
-    return new Promise((resolve) => setTimeout(resolve, time));
 }
 
-var gameVars = {
-    hoursWaited: 2
+var Game = {
+    advanceTo: function (s) {
+        if (player.health != 0) {
+            Game._changeLevel(s)
+        }
+        Game.tick();
+    },
+    _changeLevel: function (s) {
+        if (typeof s != "undefined" && "customFunc" in s) {
+            s.customFunc()
+        }
+        if (!("block" in s)) {
+            UIHandler.updateText(s.text)
+            UIHandler.updateButtons(s.buttons)
+        }
+    },
+    tick: function () {
+        if (player.state = "alive" && player.health <= 0) {
+            player.health = 1
+            player.items = ["Hope"]
+            Game._changelevel(scenario.gameover)
+        }
+        UIHandler.updateStats();
+    },
+    restartGame: function () {
+        player.items = ["Water"]
+        player.health = 20;
+        player.violence = 0;
+        player.hoursWaited = 2;
+        Game.advanceTo(scenario.main)
+    },
+    customDeath: function (message) {
+        scenario.gameover.text = message + "\nPlay Again?"
+        Game.advanceTo(scenario.gameover)
+    }
+}
+
+var player = {
+    items: ["Water"],
+    health: 20,
+    hoursWaited: 2,
+    violence: 0
 }
 
 var scenario = {
+    gameover: {
+        text: "You died\nPlay again?",
+        buttons: [
+            ["Restart", "Game.restartGame()"],
+        ]
+    },
     main: {
         text: "You look around you, and see nothing but darkness\nWhat do you do?",
         buttons: [
-            ["Wait", "advanceTo(scenario.wait)"],
-            ["Wander", "advanceTo(scenario.wander)"]
+            ["Wait", "Game.advanceTo(scenario.wait)"],
+            ["Wander", "Game.advanceTo(scenario.wander)"]
         ]
     },
     wait: {
         text: "",
         buttons: [
-            ["Wait for longer", "advanceTo(scenario.wait)"],
-            ["Wander", "advanceTo(scenario.wander)"]
+            ["Wait for longer", "Game.advanceTo(scenario.wait)"],
+            ["Wander", "Game.advanceTo(scenario.wander)"]
         ],
         customFunc: function () {
-            scenario.wait.text = `You wait for ${gameVars.hoursWaited} hours, but nothing happens\nWhat do you do?`;
-            gameVars.hoursWaited += 1;
+            scenario.wait.text = `You wait for ${player.hoursWaited} hours, but nothing happens\nWhat do you do?`;
+            player.hoursWaited += 1;
+            if (player.hoursWaited > 4) {
+                player.health = -1;
+                Game.customDeath("You died of " + ["exhaustion", "dehydration", "boredom"][Math.floor(Math.random() * 3)])
+            }
         }
     },
     wander: {
-        text: "You wandered and got lost\nThe End!",
+        text: "You find a mysterious silent creature. You feel like it is harmless.\nWhat do you do?",
         buttons: [
-            ["wow ok", "advanceTo(scenario.lolwat)"]
+            ["Wander", "Game.advanceTo(scenario.wander2)"],
+            ["Approach", "Game.advanceTo()"]
         ]
     },
-    lolwat: {
-        text: "no really I wasn't joking",
+    wander2: {
+        text: "You find a mysterious silent creature. You feel like it is harmless.\nWhat do you do?",
         buttons: [
-            ["so this is really it huh?", "advanceTo(scenario.actualend)"]
+            ["Wander", "Game.advanceTo(scenario.witch)"],
+            ["Approach", "Game.advanceTo(scenario.runfrombeast)"]
         ]
     },
-    actualend: {
-        text: "yep and I have to sleep bye!",
+    runfrombeast: {
+        text: "The creature has red eyes!",
         buttons: [
-            ["why do you need sleep you're a website", "advanceTo(scenario.sike)"]
+            ["ok", "Game.advanceTo(scenario.witch)"]
         ]
     },
-    sike: {
-        text: "what if I'm not a website",
+    witch: {
+        text: "You find out that the a witch is controlling the beast\nWhat do you do ? ",
         buttons: [
-            ["ok wow bye", "advanceTo(scenario.sike)"]
+            ["Fight the Witch", "Game.restartGame()"],
+            ["Fight the Beast", "Game.advanceTo(scenario.beingeaten) "],
         ]
-    }
-};
+    },
+    beingeaten: {
+        text: "You're being crushed in the breast's mouth!",
+        buttons: [
+            ["Keep calm", ""]
+            ["Try to protect yourself fro"]
+        ]
+
+    },
+
+}
