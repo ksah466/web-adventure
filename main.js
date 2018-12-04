@@ -45,26 +45,29 @@ input.onclick = function () {
 var debug = {
     advanceTo: function (s) {
         if (!Game.hasStarted) {
-            input.parentNode.removeChild(input)
-            stats.style.visibility = "";
-            Game.hasStarted = true;
-            Game.restartGame()
+            UIHandler.fadeIn().then(() => {
+                input.parentNode.removeChild(input)
+                stats.style.visibility = "";
+                Game.hasStarted = true;
+                Game.restartGame();
+            })
         }
         Game.advanceTo(s)
     }
 }
 
 var UIHandler = {
+    textRegex: new RegExp("\n", "g"),
     updateStats: function () {
         health.innerText = player.health
         if (player.items.length == 0) {
-            items.innerText = "[Nothing]"
+            items.innerText = "[Nothing]" // Place holder for empty items
         } else {
             items.innerText = player.items.join()
         }
     },
     updateText: function (words) {
-        text.innerHTML = words.replace("\n", "<br>")
+        text.innerHTML = words.replace(this.textRegex, "<br>")
     },
     updateButtons: function (buttonList) {
         choices.innerHTML = "";
@@ -78,7 +81,7 @@ var UIHandler = {
         document.getElementById("center-screen").classList.add("fade")
         return delay(350)
     },
-    fadeOut: function() {
+    fadeOut: function () {
         document.getElementById("center-screen").classList.remove("fade")
     },
     fadeToggle: function () {
@@ -93,14 +96,12 @@ var Game = {
     _changeLevel: function (s) {
         if (typeof s != "undefined") {
             if ("preProcess" in s) {
-                if(s.preProcess()) {
-                    console.log("Preprocess executed");
+                if (s.preProcess()) {
                     return;
                 }
             }
             UIHandler.fadeIn().then(function () {
                 if ("customFunc" in s) {
-                    console.log("CustomFunc executed");
                     s.customFunc()
                 }
                 console.log(`Proceeding to ${s.text}`);
@@ -117,7 +118,7 @@ var Game = {
             player.health = 0
             player.items = ["Hope"]
             Game._changeLevel(scenario.gameover)
-        }  
+        }
     },
     restartGame: function () {
         player = {
@@ -126,6 +127,7 @@ var Game = {
             hoursWaited: 2,
             violence: 0
         }
+        light.approach.ignoreLevel = 0;
         Game.advanceTo(scenario.main)
     },
     customDeath: function (message) {
@@ -137,7 +139,8 @@ var Game = {
         eaten: "You were eaten by the beast.",
         panic: "You panicked to death."
     },
-    hasStarted: false
+    hasStarted: false,
+    endings: 0,
 }
 
 var player;
@@ -163,109 +166,195 @@ var scenario = {
             ["Wander", "Game.advanceTo(scenario.wander)"]
         ],
         customFunc: function () {
-            scenario.wait.text = `You wait for ${player.hoursWaited} hours, but nothing happens.\nWhat do you do?`;
+            switch (player.hoursWaited) {
+                case 2:
+                    scenario.wait.text = `You wait for ${player.hoursWaited} hours, but nothing happens.\nWhat do you do?`;
+                    break;
+                case 3:
+                    scenario.wait.text = `You wait for ${player.hoursWaited} hours, and start questioning your existence.\nWhat do you do?`;
+                    break;
+                case 4:
+                    scenario.wait.text = `You wait for ${player.hoursWaited} hours, and start wondering what's real, and what's not real.\nWhat do you do?`;
+                    break;
+                default:
+                    scenario.wait.text = `You wait for ${player.hoursWaited} hours, and start wondering if pressing the 'Wait for longer' button is worthwhile.\nWhat do you do?`;
+                    break;
+            }
             player.hoursWaited += 1;
 
         },
         preProcess: function () {
-            if (player.hoursWaited > 5) {
-                Game.customDeath("You died of " + ["exhaustion", "dehydration", "boredom", "malnutrition"].pickRandom())
+            if (player.hoursWaited > 10) {
+                Game.advanceTo(endings.longwait)
                 return true
             }
         }
     },
     wander: {
-        text: "You find a mysterious silent creature. You feel like it is harmless.\nWhat do you do?",
+        text: "You see a mysterious white glow in the distance.\nWhat do you do?",
         buttons: [
-            ["Wander", "Game.advanceTo(scenario.wander2)"],
-            ["Approach", "Game.advanceTo(beast.approach)"]
+            ["Approach", "Game.advanceTo(light.approach)"],
+            ["Ignore", "Game.advanceTo(scenario.ignore1)"],
         ]
     },
-    wander2: {
+    ignore1: {
         text: "",
         buttons: [
-            ["", ""],
-            ["", ""]
+            ["Approach", "Game.advanceTo(light.approach)"],
+            ["Ignore", "Game.advanceTo(scenario.ignore2)"]
+        ],
+        direction: ["right", "left", "backwards"].pickRandom(),
+        customFunc: function () {
+            light.approach.ignoreLevel += 1;
+            this.text = `You turn ${this.direction} to ignore the glow, but it has appeared in front of you`
+        }
+    },
+    ignore2: {
+        text: "",
+        buttons: [
+            ["Approach", "Game.advanceTo(light.approach)"],
+            ["Ignore", "Game.advanceTo(scenario.ignore3)"]
+        ],
+        direction: {"right":"left this time", "left":"right this time", "backwards":"backwards again"},
+        customFunc: function () {
+            light.approach.ignoreLevel += 1;
+            this.text = `You turn ${this.direction[scenario.ignore1.direction]}, but it has still appeared in front of you`
+        }
+    },
+    ignore3: {
+        text: "You close your eyes, hoping it will disappear",
+        buttons: [
+            ["[Continue]", "Game.advanceTo(endings.everyignore)"]
         ]
     }
 }
 
-var beast = {
+var light = {
     approach: {
-        text: "The creature has red eyes!",
+        text: "",
         buttons: [
-            ["[>]", "Game.advanceTo(beast.beingeaten)"]
-        ]
-    },
-    beingeaten: {
-        text: "You are being crushed in the beast's mouth!",
-        buttons: [
-            ["Keep calm", "Game.advanceTo(beast.keepcalm)"],
-            ["Struggle your way out", "Game.customDeath(Game.deathMessages.eaten)"]
+            ["Look Around", "Game.advanceTo(light.lookaround)"],
+            ["\'Where Am I\'", "Game.advanceTo(light.whereami)"]
         ],
-    },
-    wander2: {
-        text: "You find a mysterious silent creature. You feel like it is harmless.\nWhat do you do?",
-        buttons: [
-            ["Wander", "Game.advanceTo(beast.witch)"],
-            ["Approach", "Game.advanceTo(beast.approachBeast)"]
-        ]
-    },
-    keepcalm: {
-        text: "You're swallowed alive.\nYou feel a shining resonance inside the beast's stomach",
-        buttons: [
-            ["Check it out", "Game.advanceTo(beast.sharpknife)"],
-            ["Panic", "Game.customDeath(Game.deathMessages.panic)"]
-        ]
-    },
-    sharpknife: {
-        text: "You find a sharp knife\nYou got a new item!",
-        buttons: [
-            ["[CONTINUE]", "Game.advanceTo(beast.whattodo)"]
-        ],
+        ignoreLevel: 0,
         customFunc: function () {
-            player.items.push("Knife")
+            if (this.ignoreLevel > 0) {
+                this.text = `? : "Ignored me ${["once", "twice"][this.ignoreLevel - 1]} have you?\nHello, anyways."`
+            } else {
+            this.text = `? : "Hello!"`
+            }
         }
+    },
+    lookaround: {
+        text: "You looked left, looked right, infinite black in all directions.",
+        buttons: [["\'Where Am I\'", "Game.advanceTo(light.whereami)"]]
+    },
+    whereami: {
+        text: "? : You're a bit dead but everything is fine?",
+        buttons: [["\'How'd that happen?\'", "Game.advanceTo(light.howdeath)"]]
+    },
+    howdeath: {
+        text: "? : Embarrassingly? Don't worry about it.\nDo you want some kombucha tea?",
+        buttons: [["\'What?\'","Game.advanceTo(light.what)"]]
+    },
+    what: {
+        text: "? : Nah it's fine, everything's fine. You're safe here",
+        buttons: [["\'What about my family?\'","Game.advanceTo(light.family)"]]
+    },
+    family: {
+        text: "? : Yeah, let's just say Tom across the road took care of that.",
+        buttons: [["\'Tom Evans? I'll kill him\'","Game.advanceTo(light.killhim)"]]
+    },
+    killhim: {
+        text: "? : Yeah, okay. Well you can't do anything about it now.\nAnd hey! there's an after life.\nIsn't that exciting?",
+        buttons: [["\'So, what happens now?\'", "Game.advanceTo(light.whattodo)"]]
     },
     whattodo: {
-        text: "You have the knife in your hands\nWhat do you do",
-        buttons: [
-            ["Kill it", "Game.advanceTo(beast.bile)"],
-            ["Think", "Game.advanceTo(beast.)"]
-        ],
+        text: "? : Ahh, okay. Here's what we'll do.\nSuddenly inside the sphere appeared images.\nThe days of your life in no particular order.",
+        buttons: [["\'What's the point of this?\'", "Game.advanceTo(light.point)"]]
     },
-    bile: {
-        text: "You  stabbed the beast liver and bile is penetrating the stomach !\n It's burning you ! ",
-        buttons: [
-            ["Cover head", "Game.advanceTo(beast.stabbing.ultracover)"],
-            ["Continue stabbing", "Game.advanceTo(beast.stabbing.moveon)"]
-        ],
-        customFunc: () => {
-            player.violence += 1;
+    point: {
+        text: "? : What was the point of life? Did you work it out?",
+        buttons: [["\'I didn't have enough time\'", "Game.advanceTo(light.enoughtime)"]]
+    },
+    enoughtime: {
+        text: "? : Oh you had time. You compeltely wasted it. Don't worry, everyone did.\nYour life was quite average, actually.",
+        buttons: [["\'I think I understand\'", "Game.advanceTo(light.understand)"]]
+    },
+    understand: {
+        text: "You : You're showing me where I went wrong.\nAnd you're going to bring me back to life and I'll finally learn from my mistakes.",
+        buttons: [["[Continue]", "Game.advanceTo(endings.normal)"]]
+    },
+
+
+}
+
+var endings = {
+    amount: [],
+    total: 5,
+    allEndCheck: function () {
+        if (endings.amount.length == endings.total) {
+            Game.advanceTo(endings.allEndings)
+            return true
+        } else {
+            return false
         }
     },
-    stabbing: {
-        ultracover: {
-            text: "What do you use as cover? \n shorts or t-shirt ? ",
-            buttons: [
-                ["shorts", ""],
-                ["t-short", "Game.advanceTo(beast.stabbing.moveon)"]
-            ],
-        },
-        moveon: {
-            text: "You covered yourself with your t-shirts",
-            buttons: [
-                ["Make a plan to escape", "Game.advanceTo(beast.CheckcedricCanCount1234567890)"],
-                ["", ""]
-            ]
-        }
-    },
-    new: {
+    longwait: {
         text: "",
         buttons: [
-            [, ],
-            [, ]
-
+            ["Play Again?", "Game.restartGame()"]
         ],
+        customFunc: function () {
+            if (endings.amount.includes("longwait")) {
+                this.text = `You already got the long wait ending...\n${endings.amount.length}/${endings.total} endings completed`
+            } else {
+                endings.amount.push("longwait")
+                this.text = `You wait for an eternity, hoping for a change\nYou got the long wait ending!\n${endings.amount.length}/${endings.total} endings completed`
+            }
+        },
+        preProcess: function () {
+            return endings.allEndCheck()
+        }
+    },
+    everyignore : {
+        text: "",
+        buttons: [
+            ["Play Again?", "Game.restartGame()"]
+        ],
+        customFunc: function () {
+            if (endings.amount.includes("everyignore")) {
+                this.text = `You already got the ignore everything ending...\n${endings.amount.length}/${endings.total} endings completed`
+            } else {
+                endings.amount.push("everyignore")
+                this.text = `You open your eyes, and find yourself stuck in eternity\nYou got the ignore everything ending!\n${endings.amount.length}/${endings.total} endings completed`
+            }
+        },
+        preProcess: function () {
+            return endings.allEndCheck()
+        }
+    },
+    normal : {
+        text: "",
+        buttons: [
+            ["Play Again?", "Game.restartGame()"]
+        ],
+        customFunc: function () {
+            if (endings.amount.includes("normal")) {
+                this.text = `You already got the normal ending...\n${endings.amount.length}/${endings.total} endings completed`
+            } else {
+                endings.amount.push("normal")
+                this.text = `No you're a simulation, in the distant future\nYou got the normal ending!\n${endings.amount.length}/${endings.total} endings completed`
+            }
+        },
+        preProcess: function () {
+            return endings.allEndCheck()
+        }
+    },
+    allEndings: {
+        text: "",
+        customFunc: function () {
+
+        }
     }
-}
+} /* These are the endings. I'm making multiple endings to make it fun*/
